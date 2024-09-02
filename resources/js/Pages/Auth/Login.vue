@@ -1,92 +1,111 @@
 <script setup lang="ts">
-import Checkbox from '@/Components/Checkbox.vue';
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+//layouts
+import GuestLayout from "@/Layouts/GuestLayout.vue";
 
-defineProps<{
-    canResetPassword?: boolean;
-    status?: string;
-}>();
+//components
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/Components/ui/form";
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
+import Link from "@/Components/shared/Link.vue";
+
+//assets
+import Logo from "@assets/LOGO__MAIN.png";
+
+//Libs
+import { ref, onMounted } from "vue";
+import { toTypedSchema } from "@vee-validate/zod";
+import * as z from "zod";
+import { useForm } from "vee-validate";
+import { router, Head } from "@inertiajs/vue3";
+
+const userEmailInput = ref<InstanceType<typeof Input> | null>(null);
+
+const formSchema = toTypedSchema(
+  z.object({
+    email: z.string().email("Must be a valid email"),
+    password: z.string(),
+  })
+);
 
 const form = useForm({
-    email: '',
-    password: '',
-    remember: false,
+  validationSchema: formSchema,
 });
 
-const submit = () => {
-    form.post(route('login'), {
-        onFinish: () => {
-            form.reset('password');
-        },
-    });
-};
+const onSubmit = form.handleSubmit((values) => {
+  router.post("/login", values, {
+    onSuccess: () => {
+      console.log("Login successful");
+    },
+    onError: (errors) => {
+      console.log("Login failed", errors);
+    },
+  });
+});
+
+onMounted(() => {
+  userEmailInput.value?.$el.focus();
+});
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Log in" />
-
-        <div v-if="status" class="mb-4 font-medium text-sm text-green-600">
-            {{ status }}
-        </div>
-
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Email" />
-
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
-                    required
-                    autofocus
-                    autocomplete="username"
+  <GuestLayout>
+    <Head title="Login" />
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-16 min-h-1/2">
+      <div class="relative">
+        <h1 class="text-3xl font-serif font-semibold mb-4 xl:text-5xl xl:mb-6">
+          Login
+        </h1>
+        <p class="xl:text-lg text-pretty xl:text-balance italic">
+          "... and remember the saying:<br />
+          In Sumo we <span class="font-semibold">trust</span>".
+        </p>
+        <img
+          :src="Logo"
+          alt="Sumo is waiting for you to sign in"
+          class="w-36 absolute right-0 xl:right-auto xl:bottom-0 z-0"
+        />
+      </div>
+      <div class="relative z-10">
+        <form @submit.prevent="onSubmit">
+          <FormField v-slot="{ componentField }" name="email">
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="user@email.com"
+                  v-bind="componentField"
+                  ref="userEmailInput"
                 />
-
-                <InputError class="mt-2" :message="form.errors.email" />
-            </div>
-
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
-
-                <TextInput
-                    id="password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password"
-                    required
-                    autocomplete="current-password"
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+          <FormField v-slot="{ componentField }" name="password">
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  placeholder="•••••••••"
+                  v-bind="componentField"
                 />
-
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
-
-            <div class="block mt-4">
-                <label class="flex items-center">
-                    <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm text-gray-600">Remember me</span>
-                </label>
-            </div>
-
-            <div class="flex items-center justify-end mt-4">
-                <Link
-                    v-if="canResetPassword"
-                    :href="route('password.request')"
-                    class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                    Forgot your password?
-                </Link>
-
-                <PrimaryButton class="ms-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Log in
-                </PrimaryButton>
-            </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+          <Button type="submit" class="w-full mt-4" size="lg"> Enter </Button>
+          <Link href="register" classes="mt-4 font-medium tracking-normal">
+            Don't have an account?&nbsp;<span class="font-bold">Sign up</span>
+          </Link>
         </form>
-    </GuestLayout>
+      </div>
+    </div>
+  </GuestLayout>
 </template>
